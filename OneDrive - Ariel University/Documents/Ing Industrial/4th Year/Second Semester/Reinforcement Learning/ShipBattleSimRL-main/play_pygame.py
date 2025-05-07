@@ -1,4 +1,4 @@
-import os, sys, pygame, numpy as np
+import os, sys, pygame, numpy as np, random
 import gymnasium as gym
 from custom_frozenlake import CustomFrozenLakeWrapper
 
@@ -28,18 +28,42 @@ MATKOT_IMG  = cvt(MATKOT_RAW)
 BEACH_IMG   = cvt(BEACH_RAW)
 SAND_TILE   = pygame.transform.smoothscale(SAND_RAW.convert(), (120, 120))
 
-# ---------- entorno ----------
-env = CustomFrozenLakeWrapper(
-        gym.make("FrozenLake-v1", is_slippery=False),
-        falafel_positions=[(1, 2)],   # ← casilla con falafel
+# ---------- función para generar mapa dinámico ----------
+def generate_random_desc(size=4):
+    desc = [['F' for _ in range(size)] for _ in range(size)]
+    desc[0][0] = 'S'
+    desc[size - 1][size - 1] = 'G'
+
+    holes = random.sample([(i, j) for i in range(size) for j in range(size)
+                           if (i, j) not in [(0, 0), (size - 1, size - 1)]],
+                          k=random.randint(1, 3))
+    for r, c in holes:
+        desc[r][c] = 'H'
+
+    falafels = random.sample([(i, j) for i in range(size) for j in range(size)
+                              if desc[i][j] == 'F'], k=random.randint(1, 2))
+    for r, c in falafels:
+        desc[r][c] = 'F'
+
+    return np.array(desc), falafels
+
+# ---------- inicializar entorno ----------
+def create_env():
+    desc, falafel_positions = generate_random_desc()
+    print("🗺️ New Map:")
+    for row in desc:
+        print(" ".join(row))
+    return CustomFrozenLakeWrapper(
+        gym.make("FrozenLake-v1", desc=desc, is_slippery=False),
+        falafel_positions=falafel_positions,
         step_penalty=-1,
         falafel_reward=5,
         goal_reward=10)
 
+env = create_env()
 state, _ = env.reset()
 episode, total = 1, 0
-key2action = {pygame.K_LEFT:0, pygame.K_DOWN:1,
-              pygame.K_RIGHT:2, pygame.K_UP:3}
+key2action = {pygame.K_LEFT:0, pygame.K_DOWN:1, pygame.K_RIGHT:2, pygame.K_UP:3}
 clock = pygame.time.Clock()
 
 # ---------- funciones de dibujado ----------
@@ -53,7 +77,7 @@ def draw_board():
     desc = env.unwrapped.desc.astype("U").tolist()
     for r in range(BOARD):
         for c in range(BOARD):
-            idx  = r*BOARD + c
+            idx  = r * BOARD + c
             cell = pygame.Rect(c*TILE, r*TILE, TILE, TILE)
 
             if desc[r][c] == "H":
@@ -61,7 +85,7 @@ def draw_board():
             elif desc[r][c] == "G":
                 screen.blit(BEACH_IMG, cell)
 
-            if idx in env.falafel_states:           # ← falafel
+            if idx in env.falafel_states:
                 screen.blit(FALAF_IMG, cell)
             if idx == state:
                 screen.blit(RUNNER_IMG, cell)
@@ -95,6 +119,7 @@ while running:
                 if term or trunc:
                     print(f"🏁 Episode {episode} finished • Score: {total}")
                     episode += 1
+                    env = create_env()
                     state, _ = env.reset()
                     total = 0
     redraw()
