@@ -21,7 +21,7 @@ class DQN(nn.Module):
         super(DQN, self).__init__()
         self.net = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(96, 256),
+            nn.Linear(112, 256),
             nn.ReLU(),
             nn.Linear(256, 128),
             nn.ReLU(),
@@ -38,18 +38,20 @@ TILE_ENCODING = {
     'R': [0, 0, 1, 0, 0]
 }
 
-def encode_observation(grid, agent_pos):
-    obs = np.zeros((GRID_SIZE, GRID_SIZE, 6), dtype=np.float32)
+def encode_observation(map_grid, agent_pos, visit_map=None):
+    state = np.zeros((GRID_SIZE, GRID_SIZE, 7), dtype=np.float32)
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
-            obs[i, j, :5] = TILE_ENCODING[grid[i][j]]
-    obs[agent_pos[0], agent_pos[1], 5] = 1.0
-    return torch.tensor(obs).unsqueeze(0)
+            state[i, j, :5] = TILE_ENCODING[map_grid[i][j]]
+    state[agent_pos[0], agent_pos[1], 5] = 1.0
+    if visit_map is not None:
+        state[:, :, 6] = visit_map
+    return torch.tensor(state).unsqueeze(0)
 
 def create_env():
     desc, falafel_positions = generate_random_desc(size=GRID_SIZE)
     env = gym.make("FrozenLake-v1", desc=desc, is_slippery=False)
-    return CustomFrozenLakeWrapper(
+    wrapped_env = CustomFrozenLakeWrapper(
         env,
         falafel_positions=falafel_positions,
         step_penalty=-1,
@@ -59,6 +61,7 @@ def create_env():
         stuck_penalty=-2,
         loop_penalty=-4
     )
+    return wrapped_env
 
 # Pygame setup
 pygame.init()
@@ -81,15 +84,22 @@ model.load_state_dict(torch.load("dqn_model.pt"))
 model.eval()
 
 # Función de visualización
-def draw(grid, agent, episode, score, message=""):
+def draw(grid, agent, episode, score, message="", env=None):
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
             rect = pygame.Rect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             tile = grid[i][j]
-            if tile == 'H': screen.blit(MATKOT_IMG, rect)
-            elif tile == 'G': screen.blit(BEACH_IMG, rect)
-            elif tile == 'R': screen.blit(FALAF_IMG, rect)
-            else: screen.blit(SAND_TILE, rect)
+            idx = i * GRID_SIZE + j
+            # קודם כל לצייר את הרקע או האובייקט
+            if idx in env.falafel_states:
+                screen.blit(FALAF_IMG, rect)
+            elif tile == 'H':
+                screen.blit(MATKOT_IMG, rect)
+            elif tile == 'G':
+                screen.blit(BEACH_IMG, rect)
+            else:
+                screen.blit(SAND_TILE, rect)
+
             if (i, j) == agent:
                 screen.blit(RUNNER_IMG, rect)
 
@@ -109,6 +119,7 @@ message = ""
 message_timer = 0
 env = create_env()
 state, _ = env.reset()
+visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
 step_count = 0
 
 # Loop principal
@@ -118,12 +129,14 @@ while running:
         if event.type == pygame.QUIT:
             running = False
     row, col = divmod(state, GRID_SIZE)
-    obs = encode_observation(env.unwrapped.desc.astype(str), (row, col))
+    visit_map[row][col] += 1
+    obs = encode_observation(env.unwrapped.desc.astype(str), (row, col), visit_map)
 
     with torch.no_grad():
         action = model(obs).argmax().item()
 
     next_state, reward, done, _, _ = env.step(action)
+    score += reward
     state = next_state
     step_count += 1
 
@@ -133,7 +146,7 @@ while running:
 
     desc = env.unwrapped.desc.astype(str)
     row, col = divmod(state, GRID_SIZE)
-    draw(desc, (row, col), episode, score, message)
+    draw(desc, (row, col), episode, score, message, env)
 
     if done or step_count >= MAX_STEPS:
         row, col = divmod(state, GRID_SIZE)
@@ -150,6 +163,7 @@ while running:
         score = 0
         env = create_env()
         state, _ = env.reset()
+        visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
         collected_rewards = set()
         position_history = []
         step_count = 0

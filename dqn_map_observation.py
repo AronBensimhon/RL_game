@@ -6,6 +6,7 @@ import random
 from collections import deque
 import matplotlib.pyplot as plt
 import os
+import copy
 import gymnasium as gym
 from custom_frozenlake import CustomFrozenLakeWrapper, generate_random_desc
 
@@ -35,7 +36,7 @@ class DQN(nn.Module):
         super(DQN, self).__init__()
         self.net = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(96, 256),
+            nn.Linear(112, 256),
             nn.ReLU(),
             nn.Linear(256, 128),
             nn.ReLU(),
@@ -44,12 +45,14 @@ class DQN(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-def encode_observation(map_grid, agent_pos):
-    state = np.zeros((GRID_SIZE, GRID_SIZE, 6), dtype=np.float32)
+def encode_observation(map_grid, agent_pos, visit_map=None):
+    state = np.zeros((GRID_SIZE, GRID_SIZE, 7), dtype=np.float32)  
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
             state[i, j, :5] = TILE_ENCODING[map_grid[i][j]]
     state[agent_pos[0], agent_pos[1], 5] = 1.0
+    if visit_map is not None:
+        state[:, :, 6] = visit_map
     return torch.tensor(state).unsqueeze(0)
 
 def create_env():
@@ -75,16 +78,26 @@ def train_dqn():
     memory = deque(maxlen=MEMORY_SIZE)
     epsilon = EPSILON_START
     rewards = []
+    goals_reached = 0
+    falls = 0
+    falafels_eaten = 0
 
+    env = create_env()
     for ep in range(EPISODES):
-        env = create_env()
+        if ep % 5 == 0:
+            env = create_env()
+        else:
+            env = copy.deepcopy(env)
         state, _ = env.reset()
         total_reward = 0
         done = False
-
+        
+        visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
+        
         for step in range(100):
             row, col = divmod(state, GRID_SIZE)
-            obs = encode_observation(env.unwrapped.desc.astype(str), (row, col))
+            visit_map[row][col] = 1.0
+            obs = encode_observation(env.unwrapped.desc.astype(str), (row, col), visit_map)
 
             if random.random() < epsilon:
                 action = random.randint(0, NUM_ACTIONS - 1)
@@ -93,15 +106,24 @@ def train_dqn():
                     action = policy_net(obs).argmax().item()
 
             next_state, reward, done, _, _ = env.step(action)
-
             next_row, next_col = divmod(next_state, GRID_SIZE)
-            next_obs = encode_observation(env.unwrapped.desc.astype(str), (next_row, next_col))
+            next_obs = encode_observation(env.unwrapped.desc.astype(str), (next_row, next_col), visit_map)
 
             memory.append((obs, action, reward, next_obs, done))
             state = next_state
             total_reward += reward
 
             if done:
+                desc = env.unwrapped.desc.astype(str)
+                row, col = divmod(state, GRID_SIZE)
+                if desc[row][col] == 'G':
+                    goals_reached += 1
+                elif desc[row][col] == 'H':
+                    falls += 1
+
+                for f in env.init_falafels:
+                    if f not in env.falafel_states:
+                        falafels_eaten += 1
                 break
 
             if len(memory) >= BATCH_SIZE:
@@ -129,7 +151,11 @@ def train_dqn():
         rewards.append(total_reward)
 
         if ep % 100 == 0:
-            print(f"Episode {ep} | Reward: {total_reward} | ε={epsilon:.3f}")
+            print(f"Episode {ep} | Reward: {total_reward:.2f} | ε={epsilon:.3f}")
+            print(f"🏁 Goals reached: {goals_reached} | 💥 Falls: {falls} | 🧆 Falafels eaten: {falafels_eaten}")
+            goals_reached = 0
+            falls = 0
+            falafels_eaten = 0
 
     return rewards, policy_net
 
