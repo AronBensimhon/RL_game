@@ -16,6 +16,7 @@ FPS = 2
 USE_RANDOM_MAP = True
 MAX_STEPS = 50
 
+
 class DQN(nn.Module):
     def __init__(self):
         super(DQN, self).__init__()
@@ -27,8 +28,10 @@ class DQN(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 4)
         )
+
     def forward(self, x):
         return self.net(x)
+
 
 TILE_ENCODING = {
     'S': [0, 0, 0, 0, 1],
@@ -37,6 +40,7 @@ TILE_ENCODING = {
     'H': [0, 1, 0, 0, 0],
     'R': [0, 0, 1, 0, 0]
 }
+
 
 def encode_observation(map_grid, agent_pos, visit_map=None):
     state = np.zeros((GRID_SIZE, GRID_SIZE, 7), dtype=np.float32)
@@ -47,6 +51,7 @@ def encode_observation(map_grid, agent_pos, visit_map=None):
     if visit_map is not None:
         state[:, :, 6] = visit_map
     return torch.tensor(state).unsqueeze(0)
+
 
 def create_env():
     desc, falafel_positions = generate_random_desc(size=GRID_SIZE)
@@ -63,6 +68,7 @@ def create_env():
     )
     return wrapped_env
 
+
 # Pygame setup
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
@@ -72,16 +78,22 @@ FONT = pygame.font.SysFont("Arial Rounded MT Bold", 24)
 BIGFONT = pygame.font.SysFont("Arial Rounded MT Bold", 48)
 
 ASSETS = os.path.join(os.path.dirname(__file__), "assets")
-RUNNER_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "runner.png")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-FALAF_IMG  = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "falafel.png")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-MATKOT_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "MATKOT.webp")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-BEACH_IMG  = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "SEA.jpg")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-SAND_TILE  = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "sand.png")).convert(), (TILE_SIZE, TILE_SIZE))
+RUNNER_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "runner.png")).convert_alpha(),
+                                          (TILE_SIZE, TILE_SIZE))
+FALAF_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "falafel.png")).convert_alpha(),
+                                         (TILE_SIZE, TILE_SIZE))
+MATKOT_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "MATKOT.webp")).convert_alpha(),
+                                          (TILE_SIZE, TILE_SIZE))
+BEACH_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "SEA.jpg")).convert_alpha(),
+                                         (TILE_SIZE, TILE_SIZE))
+SAND_TILE = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "sand.png")).convert(),
+                                         (TILE_SIZE, TILE_SIZE))
 
 # Cargar modelo entrenado
 model = DQN()
 model.load_state_dict(torch.load("dqn_model.pt"))
 model.eval()
+
 
 # Función de visualización
 def draw(grid, agent, episode, score, message="", env=None):
@@ -111,6 +123,7 @@ def draw(grid, agent, episode, score, message="", env=None):
         screen.blit(msg, (WINDOW_SIZE // 2 - msg.get_width() // 2, WINDOW_SIZE // 2 - msg.get_height() // 2))
 
     pygame.display.flip()
+
 
 # Estado inicial
 episode = 1

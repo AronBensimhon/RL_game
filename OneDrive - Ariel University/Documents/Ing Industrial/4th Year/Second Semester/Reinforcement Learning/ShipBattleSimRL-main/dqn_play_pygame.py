@@ -6,7 +6,6 @@ import os
 import time
 import random
 
-
 # Parámetros
 GRID_SIZE = 4
 TILE_SIZE = 120
@@ -14,6 +13,7 @@ WINDOW_SIZE = GRID_SIZE * TILE_SIZE
 FPS = 2
 USE_RANDOM_MAP = True
 MAX_STEPS = 50
+
 
 class DQN(nn.Module):
     def __init__(self):
@@ -24,8 +24,10 @@ class DQN(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 4)
         )
+
     def forward(self, x):
         return self.net(x)
+
 
 TILE_ENCODING = {
     'S': [0, 0, 0, 0, 1],
@@ -35,6 +37,7 @@ TILE_ENCODING = {
     'R': [0, 0, 1, 0, 0]
 }
 
+
 def encode_observation(grid, agent_pos):
     obs = np.zeros((GRID_SIZE, GRID_SIZE, 6), dtype=np.float32)
     for i in range(GRID_SIZE):
@@ -43,13 +46,19 @@ def encode_observation(grid, agent_pos):
     obs[agent_pos[0], agent_pos[1], 5] = 1.0
     return torch.tensor(obs).unsqueeze(0)
 
+
 def move(agent, action):
     r, c = agent
-    if action == 0 and c > 0: c -= 1
-    elif action == 1 and r < GRID_SIZE - 1: r += 1
-    elif action == 2 and c < GRID_SIZE - 1: c += 1
-    elif action == 3 and r > 0: r -= 1
+    if action == 0 and c > 0:
+        c -= 1
+    elif action == 1 and r < GRID_SIZE - 1:
+        r += 1
+    elif action == 2 and c < GRID_SIZE - 1:
+        c += 1
+    elif action == 3 and r > 0:
+        r -= 1
     return r, c
+
 
 def generate_map():
     grid = [['F' for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
@@ -75,6 +84,7 @@ def generate_map():
 
     return grid
 
+
 # Pygame setup
 pygame.init()
 screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE))
@@ -84,16 +94,22 @@ FONT = pygame.font.SysFont("Arial Rounded MT Bold", 24)
 BIGFONT = pygame.font.SysFont("Arial Rounded MT Bold", 48)
 
 ASSETS = os.path.join(os.path.dirname(__file__), "assets")
-RUNNER_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "runner.png")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-FALAF_IMG  = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "falafel.jpeg")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-MATKOT_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "MATKOT.jpeg")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-BEACH_IMG  = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "SEA.png")).convert_alpha(), (TILE_SIZE, TILE_SIZE))
-SAND_TILE  = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "sand.jpeg")).convert(), (TILE_SIZE, TILE_SIZE))
+RUNNER_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "runner.png")).convert_alpha(),
+                                          (TILE_SIZE, TILE_SIZE))
+FALAF_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "falafel.jpeg")).convert_alpha(),
+                                         (TILE_SIZE, TILE_SIZE))
+MATKOT_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "MATKOT.jpeg")).convert_alpha(),
+                                          (TILE_SIZE, TILE_SIZE))
+BEACH_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "SEA.png")).convert_alpha(),
+                                         (TILE_SIZE, TILE_SIZE))
+SAND_TILE = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "sand.jpeg")).convert(),
+                                         (TILE_SIZE, TILE_SIZE))
 
 # Cargar modelo entrenado
 model = DQN()
 model.load_state_dict(torch.load("dqn_model.pt"))
 model.eval()
+
 
 # Función de visualización
 def draw(grid, agent, episode, score, message=""):
@@ -101,10 +117,14 @@ def draw(grid, agent, episode, score, message=""):
         for j in range(GRID_SIZE):
             rect = pygame.Rect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             tile = grid[i][j]
-            if tile == 'H': screen.blit(MATKOT_IMG, rect)
-            elif tile == 'G': screen.blit(BEACH_IMG, rect)
-            elif tile == 'R': screen.blit(FALAF_IMG, rect)
-            else: screen.blit(SAND_TILE, rect)
+            if tile == 'H':
+                screen.blit(MATKOT_IMG, rect)
+            elif tile == 'G':
+                screen.blit(BEACH_IMG, rect)
+            elif tile == 'R':
+                screen.blit(FALAF_IMG, rect)
+            else:
+                screen.blit(SAND_TILE, rect)
             if (i, j) == agent:
                 screen.blit(RUNNER_IMG, rect)
 
@@ -116,6 +136,7 @@ def draw(grid, agent, episode, score, message=""):
         screen.blit(msg, (WINDOW_SIZE // 2 - msg.get_width() // 2, WINDOW_SIZE // 2 - msg.get_height() // 2))
 
     pygame.display.flip()
+
 
 # Estado inicial
 episode = 1

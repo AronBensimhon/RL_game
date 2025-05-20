@@ -31,6 +31,7 @@ TILE_ENCODING = {
     'R': [0, 0, 1, 0, 0]
 }
 
+
 class DQN(nn.Module):
     def __init__(self):
         super(DQN, self).__init__()
@@ -42,11 +43,13 @@ class DQN(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 4)
         )
+
     def forward(self, x):
         return self.net(x)
 
+
 def encode_observation(map_grid, agent_pos, visit_map=None):
-    state = np.zeros((GRID_SIZE, GRID_SIZE, 7), dtype=np.float32)  
+    state = np.zeros((GRID_SIZE, GRID_SIZE, 7), dtype=np.float32)
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
             state[i, j, :5] = TILE_ENCODING[map_grid[i][j]]
@@ -54,6 +57,7 @@ def encode_observation(map_grid, agent_pos, visit_map=None):
     if visit_map is not None:
         state[:, :, 6] = visit_map
     return torch.tensor(state).unsqueeze(0)
+
 
 def create_env():
     desc, falafel_positions = generate_random_desc(size=GRID_SIZE)
@@ -69,6 +73,7 @@ def create_env():
         loop_penalty=-4
     )
     return wrapped_env
+
 
 def train_dqn():
     policy_net = DQN()
@@ -91,9 +96,9 @@ def train_dqn():
         state, _ = env.reset()
         total_reward = 0
         done = False
-        
+
         visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
-        
+
         for step in range(100):
             row, col = divmod(state, GRID_SIZE)
             visit_map[row][col] = 1.0
@@ -158,6 +163,7 @@ def train_dqn():
             falafels_eaten = 0
 
     return rewards, policy_net
+
 
 # --- EJECUCIÓN PRINCIPAL ---
 print("🧪 Verificando si entra al __main__...")
