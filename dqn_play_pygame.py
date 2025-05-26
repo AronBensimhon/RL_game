@@ -64,7 +64,10 @@ def create_env():
         goal_reward=10,
         death_penalty=-10,
         stuck_penalty=-2,
-        loop_penalty=-4
+        loop_penalty=-4,
+        # Wind parameters: wind_probability, wind_bias
+        wind_probability=0.2,
+        wind_bias=[0.25, 0.25, 0.25, 0.25]
     )
     return wrapped_env
 

@@ -24,7 +24,8 @@ def generate_random_desc(size=4):
 class CustomFrozenLakeWrapper(gym.Wrapper):
     def __init__(self, env, falafel_positions, step_penalty=-1,
                  falafel_reward=5, goal_reward=15, death_penalty=-10,
-                 stuck_penalty=-2, loop_penalty=-4):
+                 stuck_penalty=-2, loop_penalty=-4,
+                 wind_probability=0.2, wind_bias=[0.25, 0.25, 0.25, 0.25]):
         super().__init__(env)
         self.size = int(np.sqrt(env.observation_space.n))
         self.init_falafels = [r*self.size + c for r, c in falafel_positions]
@@ -39,6 +40,47 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
         self.position_history = []
         self.state_visit_counts = dict()
 
+        # Wind parameters for introducing stochasticity
+        # wind_probability: float (0 to 1), the chance that wind affects the chosen action.
+        #                   0 means no wind, 1 means wind always affects the action.
+        self.wind_probability = wind_probability
+        # wind_bias: list/array of 4 floats (summing to 1), probabilities for wind direction.
+        #            Corresponds to actions [UP, DOWN, LEFT, RIGHT].
+        #            e.g., [0.1, 0.1, 0.4, 0.4] would make wind more likely to blow LEFT or RIGHT.
+        #            NOTE: For correct application in `apply_wind`, this bias should map to
+        #            action indices [0, 1, 2, 3] which typically mean [LEFT, DOWN, RIGHT, UP].
+        self.wind_bias = wind_bias
+
+    def apply_wind(self, action: int) -> int:
+        """
+        Applies a stochastic wind effect to the agent's intended action.
+
+        With a probability of `self.wind_probability`, the wind takes over and
+        selects a new action based on `self.wind_bias`. Otherwise, the original
+        action is returned.
+
+        The actions are assumed to be mapped as follows (standard for FrozenLake):
+        0: LEFT
+        1: DOWN
+        2: RIGHT
+        3: UP
+        `self.wind_bias` should be a list of 4 probabilities corresponding to these actions.
+
+        Args:
+            action (int): The agent's intended action.
+
+        Returns:
+            int: The potentially modified action after considering wind effects.
+        """
+        if random.random() < self.wind_probability:
+            # Wind is active, choose a new action based on wind_bias
+            # The population [0, 1, 2, 3] corresponds to LEFT, DOWN, RIGHT, UP
+            wind_action = random.choices(population=[0, 1, 2, 3], weights=self.wind_bias, k=1)[0]
+            return wind_action
+        else:
+            # Wind is not active, return original action
+            return action
+
     def reset(self, **kwargs):
         self.falafel_states = self.init_falafels.copy()
         self.last_state = None
@@ -47,7 +89,11 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
         return self.env.reset(**kwargs)
 
     def step(self, action):
-        state, base_reward, done, truncated, info = self.env.step(action)
+        # Apply wind effect to the action
+        effective_action = self.apply_wind(action)
+
+        # Pass the effective_action (potentially modified by wind) to the environment
+        state, base_reward, done, truncated, info = self.env.step(effective_action)
         reward = self.step_penalty
 
         # Initialize visit count if new state
