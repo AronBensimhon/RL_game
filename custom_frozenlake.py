@@ -70,16 +70,21 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
             action (int): The agent's intended action.
 
         Returns:
-            int: The potentially modified action after considering wind effects.
+            tuple[int, bool]: A tuple containing:
+                - resulting_action (int): The action to be taken (original or wind-modified).
+                - wind_interfered_flag (bool): True if wind actively chose a new action, False otherwise.
         """
+        wind_interfered_flag = False
+        resulting_action = action
+
         if random.random() < self.wind_probability:
             # Wind is active, choose a new action based on wind_bias
             # The population [0, 1, 2, 3] corresponds to LEFT, DOWN, RIGHT, UP
             wind_action = random.choices(population=[0, 1, 2, 3], weights=self.wind_bias, k=1)[0]
-            return wind_action
-        else:
-            # Wind is not active, return original action
-            return action
+            resulting_action = wind_action
+            wind_interfered_flag = True
+        
+        return resulting_action, wind_interfered_flag
 
     def reset(self, **kwargs):
         self.falafel_states = self.init_falafels.copy()
@@ -90,10 +95,18 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
 
     def step(self, action):
         # Apply wind effect to the action
-        effective_action = self.apply_wind(action)
+        effective_action, wind_interfered = self.apply_wind(action)
 
         # Pass the effective_action (potentially modified by wind) to the environment
         state, base_reward, done, truncated, info = self.env.step(effective_action)
+        
+        # Update info dictionary with wind effect details
+        if wind_interfered:
+            info['wind_active'] = True
+            info['wind_direction'] = effective_action
+        else:
+            info['wind_active'] = False
+            
         reward = self.step_penalty
 
         # Initialize visit count if new state
