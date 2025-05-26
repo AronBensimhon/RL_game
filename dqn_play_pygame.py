@@ -16,6 +16,8 @@ FPS = 2
 USE_RANDOM_MAP = True
 MAX_STEPS = 50
 WIND_ANIMATION_DURATION = 500  # milliseconds
+SWIPE_ANIMATION_FRAMES = 5
+SWIPE_ALPHA = 100
 
 
 class DQN(nn.Module):
@@ -80,6 +82,8 @@ pygame.display.set_caption("DQN Agent on Frozen Map")
 clock = pygame.time.Clock()
 FONT = pygame.font.SysFont("Arial Rounded MT Bold", 24)
 BIGFONT = pygame.font.SysFont("Arial Rounded MT Bold", 48)
+NAVY_BLUE = (0, 0, 128)
+SWIPE_COLOR = (173, 216, 230) # Light blue
 
 ASSETS = os.path.join(os.path.dirname(__file__), "assets")
 RUNNER_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "runner.png")).convert_alpha(),
@@ -101,12 +105,12 @@ model.eval()
 
 # Función de visualización
 def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None):
+    # Draw tiles first
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
             rect = pygame.Rect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             tile = grid[i][j]
             idx = i * GRID_SIZE + j
-            # קודם כל לצייר את הרקע או האובייקט
             if idx in env.falafel_states:
                 screen.blit(FALAF_IMG, rect)
             elif tile == 'H':
@@ -116,32 +120,75 @@ def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None)
             else:
                 screen.blit(SAND_TILE, rect)
 
-            if (i, j) == agent:
-                screen.blit(RUNNER_IMG, rect)
+    # Swipe Animation (drawn after tiles, before agent and other UI elements)
+    if last_wind_info and last_wind_info['swipe_progress'] > 0:
+        wind_dir = last_wind_info['direction']
+        progress_ratio = (SWIPE_ANIMATION_FRAMES - last_wind_info['swipe_progress'] + 1) / SWIPE_ANIMATION_FRAMES
+        
+        swipe_rect = None
+        if wind_dir == 3:  # UP
+            swipe_h = TILE_SIZE
+            current_y = WINDOW_SIZE - int((WINDOW_SIZE + swipe_h) * progress_ratio - swipe_h)
+            swipe_rect = pygame.Rect(0, current_y, WINDOW_SIZE, swipe_h)
+        elif wind_dir == 1:  # DOWN
+            swipe_h = TILE_SIZE
+            current_y = int((WINDOW_SIZE + swipe_h) * progress_ratio) - swipe_h
+            swipe_rect = pygame.Rect(0, current_y, WINDOW_SIZE, swipe_h)
+        elif wind_dir == 0:  # LEFT
+            swipe_w = TILE_SIZE
+            current_x = WINDOW_SIZE - int((WINDOW_SIZE + swipe_w) * progress_ratio - swipe_w)
+            swipe_rect = pygame.Rect(current_x, 0, swipe_w, WINDOW_SIZE)
+        elif wind_dir == 2:  # RIGHT
+            swipe_w = TILE_SIZE
+            current_x = int((WINDOW_SIZE + swipe_w) * progress_ratio) - swipe_w
+            swipe_rect = pygame.Rect(current_x, 0, swipe_w, WINDOW_SIZE)
 
+        if swipe_rect:
+            swipe_surface = pygame.Surface(swipe_rect.size, pygame.SRCALPHA)
+            swipe_surface.fill((*SWIPE_COLOR, SWIPE_ALPHA))
+            screen.blit(swipe_surface, swipe_rect.topleft)
+
+    # Draw agent
+    agent_r, agent_c = agent
+    screen.blit(RUNNER_IMG, (agent_c * TILE_SIZE, agent_r * TILE_SIZE))
+
+
+    # Graphical Wind Arrow Animation (drawn on top of swipe, if active)
+    if last_wind_info and last_wind_info['active']:
+        grid_r, grid_c = last_wind_info['position']
+        wind_dir = last_wind_info['direction']
+        
+        center_x = grid_c * TILE_SIZE + TILE_SIZE // 2
+        center_y = grid_r * TILE_SIZE + TILE_SIZE // 2
+        
+        arrow_length = TILE_SIZE // 4
+        barb_length = TILE_SIZE // 6
+        line_thickness = 3
+
+        if wind_dir == 3:  # UP
+            pygame.draw.line(screen, NAVY_BLUE, (center_x, center_y + arrow_length//2), (center_x, center_y - arrow_length//2), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x, center_y - arrow_length//2), (center_x - barb_length, center_y - arrow_length//2 + barb_length), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x, center_y - arrow_length//2), (center_x + barb_length, center_y - arrow_length//2 + barb_length), line_thickness)
+        elif wind_dir == 1:  # DOWN
+            pygame.draw.line(screen, NAVY_BLUE, (center_x, center_y - arrow_length//2), (center_x, center_y + arrow_length//2), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x, center_y + arrow_length//2), (center_x - barb_length, center_y + arrow_length//2 - barb_length), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x, center_y + arrow_length//2), (center_x + barb_length, center_y + arrow_length//2 - barb_length), line_thickness)
+        elif wind_dir == 0:  # LEFT
+            pygame.draw.line(screen, NAVY_BLUE, (center_x + arrow_length//2, center_y), (center_x - arrow_length//2, center_y), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x - arrow_length//2, center_y), (center_x - arrow_length//2 + barb_length, center_y - barb_length), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x - arrow_length//2, center_y), (center_x - arrow_length//2 + barb_length, center_y + barb_length), line_thickness)
+        elif wind_dir == 2:  # RIGHT
+            pygame.draw.line(screen, NAVY_BLUE, (center_x - arrow_length//2, center_y), (center_x + arrow_length//2, center_y), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x + arrow_length//2, center_y), (center_x + arrow_length//2 - barb_length, center_y - barb_length), line_thickness)
+            pygame.draw.line(screen, NAVY_BLUE, (center_x + arrow_length//2, center_y), (center_x + arrow_length//2 - barb_length, center_y + barb_length), line_thickness)
+
+    # UI messages
     label = FONT.render(f"Episode: {episode}   Score: {score}", True, (0, 0, 0))
     screen.blit(label, (WINDOW_SIZE - label.get_width() - 10, 10))
 
     if message:
         msg = BIGFONT.render(message, True, (0, 0, 0))
         screen.blit(msg, (WINDOW_SIZE // 2 - msg.get_width() // 2, WINDOW_SIZE // 2 - msg.get_height() // 2))
-
-    # Wind Animation
-    if last_wind_info and last_wind_info['active']:
-        pos_r, pos_c = last_wind_info['position'] # grid coordinates (row, col)
-        # Convert grid coordinates to pixel coordinates for drawing
-        pixel_x = pos_c * TILE_SIZE + TILE_SIZE // 2  # Center of the tile: col determines x-axis
-        pixel_y = pos_r * TILE_SIZE + TILE_SIZE // 2  # Center of the tile: row determines y-axis
-        
-        wind_direction = last_wind_info['direction']
-        direction_arrows = {0: '<', 1: 'v', 2: '>', 3: '^'} # LEFT, DOWN, RIGHT, UP
-        wind_text_str = f"WIND {direction_arrows.get(wind_direction, '?')}" # Added '?' for unknown direction
-        
-        wind_msg_render = FONT.render(wind_text_str, True, (255, 0, 0)) # Red color
-        
-        # Display this rendered text near the agent's position (at pixel_x, pixel_y)
-        screen.blit(wind_msg_render, (pixel_x - wind_msg_render.get_width() // 2, 
-                                     pixel_y - wind_msg_render.get_height() // 2 - TILE_SIZE // 3)) # Example offset
 
     pygame.display.flip()
 
@@ -157,8 +204,8 @@ visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
 step_count = 0
 
 # Wind animation state
-wind_animation_timer = 0 # This timer is now primarily managed to turn on last_wind_info['active']
-last_wind_info = {'active': False, 'direction': -1, 'position': (0, 0)}
+wind_animation_timer = 0 
+last_wind_info = {'active': False, 'direction': -1, 'position': (0, 0), 'swipe_progress': 0}
 
 # Loop principal
 running = True
@@ -184,40 +231,40 @@ while running:
     # Process wind info for animation
     wind_active_from_env = info.get('wind_active', False)
     if wind_active_from_env:
-        wind_animation_timer = pygame.time.get_ticks() # Start timer for how long wind_info is considered "fresh"
+        wind_animation_timer = pygame.time.get_ticks() 
         last_wind_info['active'] = True
         last_wind_info['direction'] = info.get('wind_direction', -1)
         last_wind_info['position'] = (prev_row, prev_col)
+        last_wind_info['swipe_progress'] = SWIPE_ANIMATION_FRAMES # Activate swipe animation
     
-    # Manage animation display duration for wind effect
-    # last_wind_info['active'] is set to True when wind blows, and False when timer expires.
+    # Manage animation display duration for directional arrow
     if last_wind_info['active'] and (pygame.time.get_ticks() - wind_animation_timer > WIND_ANIMATION_DURATION):
         last_wind_info['active'] = False
-        # wind_animation_timer is not reset to 0 here, its value is for checking freshness from last wind event
+        # swipe_progress is managed independently below
 
     # Mensaje temporal for other messages (e.g., falafel, trap)
-    if message_timer > 0 and pygame.time.get_ticks() - message_timer > 1000: # This timer is for other messages
+    if message_timer > 0 and pygame.time.get_ticks() - message_timer > 1000: 
         message = ""
 
     # Current agent position for drawing
     current_row, current_col = divmod(state, GRID_SIZE)
-    # Pass current_row, current_col for agent rendering, and env.unwrapped.desc for map
     draw(env.unwrapped.desc.astype(str), (current_row, current_col), episode, score, message, env, last_wind_info)
 
+    # Decrement swipe progress after drawing
+    if last_wind_info['swipe_progress'] > 0:
+        last_wind_info['swipe_progress'] -= 1
+
     if done or step_count >= MAX_STEPS:
-        # Use current_row, current_col for end-of-episode messages based on agent's final position
         desc_at_end = env.unwrapped.desc.astype(str)
         if desc_at_end[current_row][current_col] == 'G':
             message = "You reached the beach!"
         elif desc_at_end[current_row][current_col] == 'H':
             message = "Matkot trap!"
-        else: # Max steps reached
+        else: 
             message = "⏹️ Max steps reached"
         
-        # Display end-of-episode message for a moment before reset
-        # Ensure the draw call uses current_row, current_col for agent position
         draw(env.unwrapped.desc.astype(str), (current_row, current_col), episode, score, message, env, last_wind_info)
-        pygame.time.wait(1000) # Wait 1 second to show message
+        pygame.time.wait(1000) 
 
         # Reset para nuevo episodio
         episode += 1
@@ -226,12 +273,11 @@ while running:
         state, _ = env.reset()
         visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
         step_count = 0
-        message = "" # Clear message for next episode
-        message_timer = 0 # Reset this timer too
+        message = "" 
+        message_timer = 0 
         
-        # Reset wind animation state for new episode
-        wind_animation_timer = 0 # Reset the timer value itself
-        last_wind_info = {'active': False, 'direction': -1, 'position': (0,0)}
+        wind_animation_timer = 0 
+        last_wind_info = {'active': False, 'direction': -1, 'position': (0,0), 'swipe_progress': 0}
 
     clock.tick(FPS)
 
