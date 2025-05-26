@@ -169,7 +169,7 @@ def train_dqn():
 print("🧪 Verificando si entra al __main__...")
 
 if __name__ == "__main__":
-    print("Running main")
+    print("Running main ")
     history, model = train_dqn()
 
     # 📈 Graficar recompensas
