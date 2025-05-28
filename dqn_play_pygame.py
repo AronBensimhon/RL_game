@@ -16,7 +16,7 @@ FPS = 2
 USE_RANDOM_MAP = True
 MAX_STEPS = 50
 WIND_ANIMATION_DURATION = 500  # milliseconds
-# Unwanted constants (SWIPE_ANIMATION_FRAMES, SWIPE_ALPHA) removed.
+
 
 class DQN(nn.Module):
     def __init__(self):
@@ -80,7 +80,6 @@ pygame.display.set_caption("DQN Agent on Frozen Map")
 clock = pygame.time.Clock()
 FONT = pygame.font.SysFont("Arial Rounded MT Bold", 24)
 BIGFONT = pygame.font.SysFont("Arial Rounded MT Bold", 48)
-# Unwanted color constants (NAVY_BLUE, SWIPE_COLOR) removed.
 
 ASSETS = os.path.join(os.path.dirname(__file__), "assets")
 RUNNER_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "runner.png")).convert_alpha(),
@@ -101,55 +100,48 @@ model.eval()
 
 
 # Función de visualización
-def draw(grid, agent, episode, score, message, env, last_wind_info, 
-         GRID_SIZE, TILE_SIZE, WINDOW_SIZE, FONT, BIGFONT, 
-         FALAF_IMG, MATKOT_IMG, BEACH_IMG, SAND_TILE, RUNNER_IMG, 
-         screen_surface):
-    # Draw tiles first
+def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None):
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
             rect = pygame.Rect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             tile = grid[i][j]
             idx = i * GRID_SIZE + j
+            # קודם כל לצייר את הרקע או האובייקט
             if idx in env.falafel_states:
-                screen_surface.blit(FALAF_IMG, rect)
+                screen.blit(FALAF_IMG, rect)
             elif tile == 'H':
-                screen_surface.blit(MATKOT_IMG, rect)
+                screen.blit(MATKOT_IMG, rect)
             elif tile == 'G':
-                screen_surface.blit(BEACH_IMG, rect)
+                screen.blit(BEACH_IMG, rect)
             else:
-                screen_surface.blit(SAND_TILE, rect)
+                screen.blit(SAND_TILE, rect)
 
-    # Draw agent
-    agent_r, agent_c = agent
-    screen_surface.blit(RUNNER_IMG, (agent_c * TILE_SIZE, agent_r * TILE_SIZE))
+            if (i, j) == agent:
+                screen.blit(RUNNER_IMG, rect)
 
-    # UI messages (score, episode)
     label = FONT.render(f"Episode: {episode}   Score: {score}", True, (0, 0, 0))
-    screen_surface.blit(label, (WINDOW_SIZE - label.get_width() - 10, 10))
+    screen.blit(label, (WINDOW_SIZE - label.get_width() - 10, 10))
 
-    # Centered message (falafel, trap, etc.)
     if message:
         msg = BIGFONT.render(message, True, (0, 0, 0))
-        screen_surface.blit(msg, (WINDOW_SIZE // 2 - msg.get_width() // 2, WINDOW_SIZE // 2 - msg.get_height() // 2))
+        screen.blit(msg, (WINDOW_SIZE // 2 - msg.get_width() // 2, WINDOW_SIZE // 2 - msg.get_height() // 2))
 
-    # Text-based Wind Indicator (No emoji)
-    if last_wind_info and last_wind_info['active']: # Ensure last_wind_info is not None
-        grid_r, grid_c = last_wind_info['position']
-        wind_dir = last_wind_info['direction']
-        
-        pixel_x = grid_c * TILE_SIZE + TILE_SIZE // 2
-        pixel_y = grid_r * TILE_SIZE + TILE_SIZE // 2
-        
-        direction_arrows = {0: '<', 1: 'v', 2: '>', 3: '^'} # LEFT, DOWN, RIGHT, UP
-        # wind_emoji variable removed
-        
-        wind_text_str = f"WIND {direction_arrows.get(wind_dir, '')}" # No emoji
-        
-        wind_msg_render = FONT.render(wind_text_str, True, (255, 0, 0)) # Red color
-        
-        text_rect = wind_msg_render.get_rect(center=(pixel_x, pixel_y - TILE_SIZE // 4))
-        screen_surface.blit(wind_msg_render, text_rect)
+    # Wind Animation
+    if last_wind_info and last_wind_info['active']:
+        pos_r, pos_c = last_wind_info['position']  # grid coordinates (row, col)
+        # Convert grid coordinates to pixel coordinates for drawing
+        pixel_x = pos_c * TILE_SIZE + TILE_SIZE // 2  # Center of the tile: col determines x-axis
+        pixel_y = pos_r * TILE_SIZE + TILE_SIZE // 2  # Center of the tile: row determines y-axis
+
+        wind_direction = last_wind_info['direction']
+        direction_arrows = {0: '<', 1: 'v', 2: '>', 3: '^'}  # LEFT, DOWN, RIGHT, UP
+        wind_text_str = f"WIND {direction_arrows.get(wind_direction, '?')}"  # Added '?' for unknown direction
+
+        wind_msg_render = FONT.render(wind_text_str, True, (255, 0, 0))  # Red color
+
+        # Display this rendered text near the agent's position (at pixel_x, pixel_y)
+        screen.blit(wind_msg_render, (pixel_x - wind_msg_render.get_width() // 2,
+                                      pixel_y - wind_msg_render.get_height() // 2 - TILE_SIZE // 3))  # Example offset
 
     pygame.display.flip()
 
@@ -164,9 +156,9 @@ state, _ = env.reset()
 visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
 step_count = 0
 
-# Wind animation state (simplified, no swipe_progress)
-wind_animation_timer = 0 
-last_wind_info = {'active': False, 'direction': -1, 'position': (0, 0)} 
+# Wind animation state
+wind_animation_timer = 0  # This timer is now primarily managed to turn on last_wind_info['active']
+last_wind_info = {'active': False, 'direction': -1, 'position': (0, 0)}
 
 # Loop principal
 running = True
@@ -184,7 +176,7 @@ while running:
     with torch.no_grad():
         action = model(obs).argmax().item()
 
-    next_state, reward, done, _, info = env.step(action) 
+    next_state, reward, done, _, info = env.step(action)  # Capture the info dictionary
     score += reward
     state = next_state
     step_count += 1
@@ -192,76 +184,40 @@ while running:
     # Process wind info for animation
     wind_active_from_env = info.get('wind_active', False)
     if wind_active_from_env:
-        wind_animation_timer = pygame.time.get_ticks() 
+        wind_animation_timer = pygame.time.get_ticks()  # Start timer for how long wind_info is considered "fresh"
         last_wind_info['active'] = True
         last_wind_info['direction'] = info.get('wind_direction', -1)
         last_wind_info['position'] = (prev_row, prev_col)
-        # No swipe_progress to set
-    
-    # Manage animation display duration for text indicator
-    if wind_animation_timer != 0 and pygame.time.get_ticks() - wind_animation_timer > WIND_ANIMATION_DURATION: # Check against wind_animation_timer directly
-        wind_animation_timer = 0 # Reset timer
-        last_wind_info['active'] = False # Deactivate indicator
+
+    # Manage animation display duration for wind effect
+    # last_wind_info['active'] is set to True when wind blows, and False when timer expires.
+    if last_wind_info['active'] and (pygame.time.get_ticks() - wind_animation_timer > WIND_ANIMATION_DURATION):
+        last_wind_info['active'] = False
+        # wind_animation_timer is not reset to 0 here, its value is for checking freshness from last wind event
 
     # Mensaje temporal for other messages (e.g., falafel, trap)
-    if message_timer > 0 and pygame.time.get_ticks() - message_timer > 1000: 
+    if message_timer > 0 and pygame.time.get_ticks() - message_timer > 1000:  # This timer is for other messages
         message = ""
 
     # Current agent position for drawing
     current_row, current_col = divmod(state, GRID_SIZE)
-    draw(
-        env.unwrapped.desc.astype(str),  # grid
-        (current_row, current_col),      # agent
-        episode,                         # episode
-        score,                           # score
-        message,                         # message
-        env,                             # env
-        last_wind_info,                  # last_wind_info
-        GRID_SIZE,                       # GRID_SIZE (global constant)
-        TILE_SIZE,                       # TILE_SIZE (global constant)
-        WINDOW_SIZE,                     # WINDOW_SIZE (global constant)
-        FONT,                            # FONT (global constant)
-        BIGFONT,                         # BIGFONT (global constant)
-        FALAF_IMG,                       # FALAF_IMG (global constant)
-        MATKOT_IMG,                      # MATKOT_IMG (global constant)
-        BEACH_IMG,                       # BEACH_IMG (global constant)
-        SAND_TILE,                       # SAND_TILE (global constant)
-        RUNNER_IMG,                      # RUNNER_IMG (global constant)
-        screen                           # screen_surface (the global screen object)
-    )
-
-    # No swipe_progress decrement logic
+    # Pass current_row, current_col for agent rendering, and env.unwrapped.desc for map
+    draw(env.unwrapped.desc.astype(str), (current_row, current_col), episode, score, message, env, last_wind_info)
 
     if done or step_count >= MAX_STEPS:
+        # Use current_row, current_col for end-of-episode messages based on agent's final position
         desc_at_end = env.unwrapped.desc.astype(str)
         if desc_at_end[current_row][current_col] == 'G':
             message = "You reached the beach!"
         elif desc_at_end[current_row][current_col] == 'H':
             message = "Matkot trap!"
-        else: 
+        else:  # Max steps reached
             message = "⏹️ Max steps reached"
-        
-        draw(
-            env.unwrapped.desc.astype(str),  # grid
-            (current_row, current_col),      # agent
-            episode,                         # episode
-            score,                           # score
-            message,                         # message
-            env,                             # env
-            last_wind_info,                  # last_wind_info
-            GRID_SIZE,                       # GRID_SIZE (global constant)
-            TILE_SIZE,                       # TILE_SIZE (global constant)
-            WINDOW_SIZE,                     # WINDOW_SIZE (global constant)
-            FONT,                            # FONT (global constant)
-            BIGFONT,                         # BIGFONT (global constant)
-            FALAF_IMG,                       # FALAF_IMG (global constant)
-            MATKOT_IMG,                      # MATKOT_IMG (global constant)
-            BEACH_IMG,                       # BEACH_IMG (global constant)
-            SAND_TILE,                       # SAND_TILE (global constant)
-            RUNNER_IMG,                      # RUNNER_IMG (global constant)
-            screen                           # screen_surface (the global screen object)
-        )
-        pygame.time.wait(1000) 
+
+        # Display end-of-episode message for a moment before reset
+        # Ensure the draw call uses current_row, current_col for agent position
+        draw(env.unwrapped.desc.astype(str), (current_row, current_col), episode, score, message, env, last_wind_info)
+        pygame.time.wait(1000)  # Wait 1 second to show message
 
         # Reset para nuevo episodio
         episode += 1
@@ -270,11 +226,12 @@ while running:
         state, _ = env.reset()
         visit_map = np.zeros((GRID_SIZE, GRID_SIZE), dtype=np.float32)
         step_count = 0
-        message = "" 
-        message_timer = 0 
-        
-        wind_animation_timer = 0 
-        last_wind_info = {'active': False, 'direction': -1, 'position': (0,0)} # Simplified reset
+        message = ""  # Clear message for next episode
+        message_timer = 0  # Reset this timer too
+
+        # Reset wind animation state for new episode
+        wind_animation_timer = 0  # Reset the timer value itself
+        last_wind_info = {'active': False, 'direction': -1, 'position': (0, 0)}
 
     clock.tick(FPS)
 

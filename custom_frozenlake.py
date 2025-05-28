@@ -2,6 +2,7 @@ import gymnasium as gym
 import numpy as np
 import random
 
+
 def generate_random_desc(size=4):
     desc = [['F' for _ in range(size)] for _ in range(size)]
     desc[0][0] = 'S'
@@ -21,6 +22,7 @@ def generate_random_desc(size=4):
 
     return np.array(desc), falafels
 
+
 class CustomFrozenLakeWrapper(gym.Wrapper):
     def __init__(self, env, falafel_positions, step_penalty=-1,
                  falafel_reward=5, goal_reward=15, death_penalty=-10,
@@ -28,7 +30,7 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
                  wind_probability=0.2, wind_bias=[0.25, 0.25, 0.25, 0.25]):
         super().__init__(env)
         self.size = int(np.sqrt(env.observation_space.n))
-        self.init_falafels = [r*self.size + c for r, c in falafel_positions]
+        self.init_falafels = [r * self.size + c for r, c in falafel_positions]
         self.falafel_states = self.init_falafels.copy()
         self.step_penalty = step_penalty
         self.falafel_reward = falafel_reward
@@ -83,7 +85,7 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
             wind_action = random.choices(population=[0, 1, 2, 3], weights=self.wind_bias, k=1)[0]
             resulting_action = wind_action
             wind_interfered_flag = True
-        
+
         return resulting_action, wind_interfered_flag
 
     def reset(self, **kwargs):
@@ -99,14 +101,14 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
 
         # Pass the effective_action (potentially modified by wind) to the environment
         state, base_reward, done, truncated, info = self.env.step(effective_action)
-        
+
         # Update info dictionary with wind effect details
         if wind_interfered:
             info['wind_active'] = True
             info['wind_direction'] = effective_action
         else:
             info['wind_active'] = False
-            
+
         reward = self.step_penalty
 
         # Initialize visit count if new state
@@ -121,7 +123,7 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
         if state in self.position_history:
             loop_penalty = -1 * self.state_visit_counts[state]
             reward += loop_penalty
-            
+
         # Track last few positions
         self.position_history.append(state)
         if len(self.position_history) > 2:
