@@ -101,7 +101,10 @@ model.eval()
 
 
 # Función de visualización
-def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None):
+def draw(grid, agent, episode, score, message, env, last_wind_info, 
+         GRID_SIZE, TILE_SIZE, WINDOW_SIZE, FONT, BIGFONT, 
+         FALAF_IMG, MATKOT_IMG, BEACH_IMG, SAND_TILE, RUNNER_IMG, 
+         screen_surface):
     # Draw tiles first
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
@@ -109,26 +112,26 @@ def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None)
             tile = grid[i][j]
             idx = i * GRID_SIZE + j
             if idx in env.falafel_states:
-                screen.blit(FALAF_IMG, rect)
+                screen_surface.blit(FALAF_IMG, rect)
             elif tile == 'H':
-                screen.blit(MATKOT_IMG, rect)
+                screen_surface.blit(MATKOT_IMG, rect)
             elif tile == 'G':
-                screen.blit(BEACH_IMG, rect)
+                screen_surface.blit(BEACH_IMG, rect)
             else:
-                screen.blit(SAND_TILE, rect)
+                screen_surface.blit(SAND_TILE, rect)
 
     # Draw agent
     agent_r, agent_c = agent
-    screen.blit(RUNNER_IMG, (agent_c * TILE_SIZE, agent_r * TILE_SIZE))
+    screen_surface.blit(RUNNER_IMG, (agent_c * TILE_SIZE, agent_r * TILE_SIZE))
 
     # UI messages (score, episode)
     label = FONT.render(f"Episode: {episode}   Score: {score}", True, (0, 0, 0))
-    screen.blit(label, (WINDOW_SIZE - label.get_width() - 10, 10))
+    screen_surface.blit(label, (WINDOW_SIZE - label.get_width() - 10, 10))
 
     # Centered message (falafel, trap, etc.)
     if message:
         msg = BIGFONT.render(message, True, (0, 0, 0))
-        screen.blit(msg, (WINDOW_SIZE // 2 - msg.get_width() // 2, WINDOW_SIZE // 2 - msg.get_height() // 2))
+        screen_surface.blit(msg, (WINDOW_SIZE // 2 - msg.get_width() // 2, WINDOW_SIZE // 2 - msg.get_height() // 2))
 
     # Text-based Wind Indicator (No emoji)
     if last_wind_info and last_wind_info['active']: # Ensure last_wind_info is not None
@@ -146,7 +149,7 @@ def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None)
         wind_msg_render = FONT.render(wind_text_str, True, (255, 0, 0)) # Red color
         
         text_rect = wind_msg_render.get_rect(center=(pixel_x, pixel_y - TILE_SIZE // 4))
-        screen.blit(wind_msg_render, text_rect)
+        screen_surface.blit(wind_msg_render, text_rect)
 
     pygame.display.flip()
 
@@ -206,7 +209,26 @@ while running:
 
     # Current agent position for drawing
     current_row, current_col = divmod(state, GRID_SIZE)
-    draw(env.unwrapped.desc.astype(str), (current_row, current_col), episode, score, message, env, last_wind_info)
+    draw(
+        env.unwrapped.desc.astype(str),  # grid
+        (current_row, current_col),      # agent
+        episode,                         # episode
+        score,                           # score
+        message,                         # message
+        env,                             # env
+        last_wind_info,                  # last_wind_info
+        GRID_SIZE,                       # GRID_SIZE (global constant)
+        TILE_SIZE,                       # TILE_SIZE (global constant)
+        WINDOW_SIZE,                     # WINDOW_SIZE (global constant)
+        FONT,                            # FONT (global constant)
+        BIGFONT,                         # BIGFONT (global constant)
+        FALAF_IMG,                       # FALAF_IMG (global constant)
+        MATKOT_IMG,                      # MATKOT_IMG (global constant)
+        BEACH_IMG,                       # BEACH_IMG (global constant)
+        SAND_TILE,                       # SAND_TILE (global constant)
+        RUNNER_IMG,                      # RUNNER_IMG (global constant)
+        screen                           # screen_surface (the global screen object)
+    )
 
     # No swipe_progress decrement logic
 
@@ -219,7 +241,26 @@ while running:
         else: 
             message = "⏹️ Max steps reached"
         
-        draw(env.unwrapped.desc.astype(str), (current_row, current_col), episode, score, message, env, last_wind_info)
+        draw(
+            env.unwrapped.desc.astype(str),  # grid
+            (current_row, current_col),      # agent
+            episode,                         # episode
+            score,                           # score
+            message,                         # message
+            env,                             # env
+            last_wind_info,                  # last_wind_info
+            GRID_SIZE,                       # GRID_SIZE (global constant)
+            TILE_SIZE,                       # TILE_SIZE (global constant)
+            WINDOW_SIZE,                     # WINDOW_SIZE (global constant)
+            FONT,                            # FONT (global constant)
+            BIGFONT,                         # BIGFONT (global constant)
+            FALAF_IMG,                       # FALAF_IMG (global constant)
+            MATKOT_IMG,                      # MATKOT_IMG (global constant)
+            BEACH_IMG,                       # BEACH_IMG (global constant)
+            SAND_TILE,                       # SAND_TILE (global constant)
+            RUNNER_IMG,                      # RUNNER_IMG (global constant)
+            screen                           # screen_surface (the global screen object)
+        )
         pygame.time.wait(1000) 
 
         # Reset para nuevo episodio
