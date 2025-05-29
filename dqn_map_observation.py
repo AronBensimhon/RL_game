@@ -13,7 +13,7 @@ from custom_frozenlake import CustomFrozenLakeWrapper, generate_random_desc
 # Parámetros generales
 GRID_SIZE = 4
 NUM_ACTIONS = 4
-EPISODES = 5000
+EPISODES = 2000
 GAMMA = 0.99
 LR = 1e-3
 EPSILON_START = 1.0
@@ -70,7 +70,10 @@ def create_env():
         goal_reward=10,
         death_penalty=-10,
         stuck_penalty=-2,
-        loop_penalty=-4
+        loop_penalty=-4,
+        # Wind parameters: wind_probability, wind_bias
+        wind_probability=0.2,
+        wind_bias=[0.25, 0.25, 0.25, 0.25]
     )
     return wrapped_env
 
@@ -169,7 +172,7 @@ def train_dqn():
 print("🧪 Verificando si entra al __main__...")
 
 if __name__ == "__main__":
-    print("✅ Dentro de __main__")
+    print("Running main ")
     history, model = train_dqn()
 
     # 📈 Graficar recompensas
