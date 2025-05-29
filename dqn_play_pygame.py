@@ -15,7 +15,7 @@ WINDOW_SIZE = GRID_SIZE * TILE_SIZE
 FPS = 2
 USE_RANDOM_MAP = True
 MAX_STEPS = 50
-WIND_ANIMATION_DURATION = 500  # milliseconds
+WIND_ANIMATION_DURATION = 300  # milliseconds
 
 
 class DQN(nn.Module):
