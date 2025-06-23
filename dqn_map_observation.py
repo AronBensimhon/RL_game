@@ -10,7 +10,7 @@ import copy
 import gymnasium as gym
 from custom_frozenlake import CustomFrozenLakeWrapper, generate_random_desc
 
-# Parámetros generales
+# General parameters
 GRID_SIZE = 4
 NUM_ACTIONS = 4
 EPISODES = 50000
