@@ -29,7 +29,7 @@ Our environment adds real-world complexity with randomized maps, wind disturbanc
 ├── custom_frozenlake.py       # Environment definition
 ├── dqn_play_pygame.py         # Visual simulator with Pygame
 ├── requirements.txt           # Python dependencies
-├── RL/                        # Visuals and figures (e.g. reward plots)
+├── assets/                    # Visuals and figures
 └── README.md                  # Project documentation
 ```
 
