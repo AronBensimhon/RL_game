@@ -1,61 +1,90 @@
-# DQN RunToTheBeach Project
+# Run to the Beach 🏖️ – Reinforcement Learning Final Project
 
-This project implements a Deep Q-Network (DQN) agent trained to navigate a custom FrozenLake-style grid world using Python, PyTorch, and Pygame.
+This project is a custom Deep Q-Network (DQN) implementation built to solve a dynamic and partially stochastic gridworld inspired by OpenAI's Frozen Lake environment.
 
-## 🧠 Project Overview
+Our environment adds real-world complexity with randomized maps, wind disturbances, penalties for repetition, and optional rewards.
 
-- **Environment**: 4×4 grid with:
-  - 🟢 Start tile (S)
-  - 🎯 Goal tile (G)
-  - 💥 Hazard tiles (matkot – H)
-  - 🌮 Reward tiles (falafel – R)
-  - 🏖️ Safe tiles (F)
-- **Agent**: Learns to reach the beach (goal) while avoiding traps and collecting falafel
-- **Model**: DQN with:
-  - Input: 4×4×6 tensor (multi-channel map encoding)
-  - Network: Flatten → Linear(128) → ReLU → Linear(4)
-  - Epsilon-greedy exploration, target network, replay buffer
+---
 
-## 📂 Files
+## 🔍 Project Overview
 
-| File | Description |
-|------|-------------|
-| `dqn_map_observation.py` | Trains the agent using DQN and saves the model as `dqn_model.pt` |
-| `dqn_play_pygame.py`     | Loads the trained model and visualizes the agent in Pygame |
-| `assets/`                | Contains images for the tiles (runner, falafel, matkot, sea, sand) |
+- **Environment**: 4×4 grid with 5 tile types: Start, Sand, Goal (Beach), Falafel (Reward), and Matkot (Trap).
+- **Agent**: Learns to navigate efficiently using Deep Q-Network with experience replay and target networks.
+- **Objective**: Reach the beach safely, collecting rewards while avoiding traps and wind-induced deviations.
+- **Training**: 50,000 episodes using PyTorch and visualized with `pygame`.
 
-## 🚀 How to Run
+---
 
-### 1. Install dependencies
+## 📸 Environment Snapshot
+
+<img width="221" alt="Screenshot 2025-06-13 134151" src="https://github.com/user-attachments/assets/ae548e89-36c8-41c5-baad-7797992a99a9" />
+
+---
+
+## 📁 Project Structure
+
 ```bash
-pip install torch pygame matplotlib 
+.
+├── dqn_map_observation.py     # DQN agent and training logic
+├── custom_frozenlake.py       # Environment definition
+├── dqn_play_pygame.py         # Visual simulator with Pygame
+├── requirements.txt           # Python dependencies
+├── RL/                        # Visuals and figures (e.g. reward plots)
+└── README.md                  # Project documentation
 ```
 
+## 📦  Installation & Running
+### 1. Clone this repository:
 
-### 2. Train the agent
+```bash
+git clone https://github.com/AronBensimhon/RL_game.git
+cd RL_game
+```
+
+### 2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Train the agent
 ```bash
 python dqn_map_observation.py
 ```
-
 This will create dqn_model.pt
 
-### 3. Run the visualization
+### 4. Run the visualization
 ```bash
 python dqn_play_pygame.py
 ```
+Note: The custom environment logic is defined in `custom_frozenlake.py`, which is imported automatically by the training and visualization scripts. You do not need to run it directly.
+
+
 
 ## 🎮 Features
-- 🧱 Falafel gives +3 and disappears when collected
 
-- 💥 Matkot trap ends the episode and penalizes the agent
+- 🧱 Falafel tile gives **+3** points and disappears when collected
+- 💥 Matkot trap gives **–10** and ends the episode immediately
+- 🏁 Goal tile gives **+10** and ends the episode
+- 🚶 Step penalty of **–1** to encourage efficient navigation
+- 🔁 Repeated visits penalized by **–n**, where *n* is the number of times the tile was visited
+- 🧍 Stuck penalty of **–2** when the agent fails to move
+- 🌬️ 20% wind probability that randomly changes agent’s direction
+- 🔁 Environment resets after each episode or 50 steps
+- 📈 Reward plot generated during training
 
-- 🏁 Goal tile gives +10 and ends the episode
 
-- 🔁 Automatic reset each episode (or after 50 steps)
 
-- 📈 Total reward graph shown during training
 
-- ✨ On-screen messages: "Falafel +3!", "Matkot trap!"
+## 👨‍💻 Authors
+
+- Aron Bensimhon  
+- Oriana Felszer  
+- Eden Shmuel
+
+  
+Industrial Engineering and Management, Ariel University
+
+
 
 
 
