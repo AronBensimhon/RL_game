@@ -25,7 +25,6 @@ def generate_random_desc(size=4):
 
 class CustomFrozenLakeWrapper(gym.Wrapper):
 
-
     def __init__(self, env, falafel_positions, step_penalty=-1,
                  falafel_reward=5, goal_reward=15, death_penalty=-10,
                  stuck_penalty=-2, loop_penalty=-4,
@@ -54,7 +53,6 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
         #            NOTE: For correct application in `apply_wind`, this bias should map to
         #            action indices [0, 1, 2, 3] which typically mean [LEFT, DOWN, RIGHT, UP].
         self.wind_bias = wind_bias
-
 
     def apply_wind(self, action: int) -> tuple[int, bool]:
         """

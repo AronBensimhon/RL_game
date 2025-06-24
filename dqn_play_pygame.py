@@ -3,12 +3,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import os
-import time
-import random
 import gymnasium as gym
 from custom_frozenlake import CustomFrozenLakeWrapper, generate_random_desc
 
-# Parámetros
+# Parameters
 GRID_SIZE = 4
 TILE_SIZE = 120
 WINDOW_SIZE = GRID_SIZE * TILE_SIZE
@@ -93,20 +91,19 @@ BEACH_IMG = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, 
 SAND_TILE = pygame.transform.smoothscale(pygame.image.load(os.path.join(ASSETS, "sand.png")).convert(),
                                          (TILE_SIZE, TILE_SIZE))
 
-# Cargar modelo entrenado
 model = DQN()
 model.load_state_dict(torch.load("dqn_model.pt"))
 model.eval()
 
 
-# Función de visualización
+# Visualisation function
 def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None):
     for i in range(GRID_SIZE):
         for j in range(GRID_SIZE):
             rect = pygame.Rect(j * TILE_SIZE, i * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             tile = grid[i][j]
             idx = i * GRID_SIZE + j
-            # קודם כל לצייר את הרקע או האובייקט
+            # background
             if idx in env.falafel_states:
                 screen.blit(FALAF_IMG, rect)
             elif tile == 'H':
@@ -146,7 +143,7 @@ def draw(grid, agent, episode, score, message="", env=None, last_wind_info=None)
     pygame.display.flip()
 
 
-# Estado inicial
+# Initial state
 episode = 1
 score = 0
 message = ""
@@ -160,7 +157,7 @@ step_count = 0
 wind_animation_timer = 0  # This timer is now primarily managed to turn on last_wind_info['active']
 last_wind_info = {'active': False, 'direction': -1, 'position': (0, 0)}
 
-# Loop principal
+# main loop
 running = True
 while running:
     for event in pygame.event.get():
@@ -195,7 +192,7 @@ while running:
         last_wind_info['active'] = False
         # wind_animation_timer is not reset to 0 here, its value is for checking freshness from last wind event
 
-    # Mensaje temporal for other messages (e.g., falafel, trap)
+    # temp message for other messages (e.g., falafel, trap)
     if message_timer > 0 and pygame.time.get_ticks() - message_timer > 1000:  # This timer is for other messages
         message = ""
 
@@ -219,7 +216,7 @@ while running:
         draw(env.unwrapped.desc.astype(str), (current_row, current_col), episode, score, message, env, last_wind_info)
         pygame.time.wait(1000)  # Wait 1 second to show message
 
-        # Reset para nuevo episodio
+        # Reset for new episode
         episode += 1
         score = 0
         env = create_env()

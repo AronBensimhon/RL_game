@@ -13,7 +13,7 @@ from custom_frozenlake import CustomFrozenLakeWrapper, generate_random_desc
 # General parameters
 GRID_SIZE = 4
 NUM_ACTIONS = 4
-EPISODES = 50000
+EPISODES = 500
 GAMMA = 0.99
 LR = 1e-3
 EPSILON_START = 1.0
@@ -22,7 +22,7 @@ EPSILON_DECAY = 0.99
 BATCH_SIZE = 64
 MEMORY_SIZE = 10000
 
-# Codificación del entorno
+# Environment encoding
 TILE_ENCODING = {
     'S': [0, 0, 0, 0, 1],
     'F': [0, 0, 0, 0, 1],
@@ -168,14 +168,13 @@ def train_dqn():
     return rewards, policy_net
 
 
-# --- EJECUCIÓN PRINCIPAL ---
-print("🧪 Verificando si entra al __main__...")
+# --- MAIN EXECUTION ---
 
 if __name__ == "__main__":
     print("Running main ")
     history, model = train_dqn()
 
-    # 📈 Graficar recompensas
+    # Graph results
     plt.plot(history)
     plt.title("Total Reward per Episode (DQN)")
     plt.xlabel("Episode")
@@ -183,8 +182,8 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.show()
 
-    # 💾 Guardar el modelo
+    # Save model
     save_path = os.path.join(os.getcwd(), "dqn_model.pt")
-    print(f"⚙️  Intentando guardar modelo en: {save_path}")
+    print(f"Saving model at: {save_path}")
     torch.save(model.state_dict(), save_path)
-    print("✅ Modelo guardado como 'dqn_model.pt'")
+    print("model saved as: 'dqn_model.pt'")
