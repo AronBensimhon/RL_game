@@ -13,7 +13,7 @@ from custom_frozenlake import CustomFrozenLakeWrapper, generate_random_desc
 # General parameters
 GRID_SIZE = 4
 NUM_ACTIONS = 4
-EPISODES = 500
+EPISODES = 50000
 GAMMA = 0.99
 LR = 1e-3
 EPSILON_START = 1.0
