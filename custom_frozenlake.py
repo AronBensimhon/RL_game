@@ -1,7 +1,7 @@
 import gymnasium as gym
 import numpy as np
 import random
-
+from typing import Tuple
 
 def generate_random_desc(size=4):
     desc = [['F' for _ in range(size)] for _ in range(size)]
@@ -54,7 +54,7 @@ class CustomFrozenLakeWrapper(gym.Wrapper):
         #            action indices [0, 1, 2, 3] which typically mean [LEFT, DOWN, RIGHT, UP].
         self.wind_bias = wind_bias
 
-    def apply_wind(self, action: int) -> tuple[int, bool]:
+    def apply_wind(self, action: int) -> Tuple[int, bool]:
         """
         Applies a stochastic wind effect to the agent's intended action.
 
