@@ -1,4 +1,4 @@
-# Run to the Beach 🏖️ – Reinforcement Learning Final Project
+# Run to the Beach – Reinforcement Learning Final Project
 
 This project is a custom Deep Q-Network (DQN) implementation built to solve a dynamic and partially stochastic gridworld inspired by OpenAI's Frozen Lake environment.
 
@@ -6,7 +6,7 @@ Our environment adds real-world complexity with randomized maps, wind disturbanc
 
 ---
 
-## 🔍 Project Overview
+## Project Overview
 
 - **Environment**: 4×4 grid with 5 tile types: Start, Sand, Goal (Beach), Falafel (Reward), and Matkot (Trap).
 - **Agent**: Learns to navigate efficiently using Deep Q-Network with experience replay and target networks.
@@ -15,13 +15,13 @@ Our environment adds real-world complexity with randomized maps, wind disturbanc
 
 ---
 
-## 📸 Environment Snapshot
+## Environment Snapshot
 
 <img width="221" alt="Screenshot 2025-06-13 134151" src="https://github.com/user-attachments/assets/ae548e89-36c8-41c5-baad-7797992a99a9" />
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```bash
 .
@@ -33,7 +33,7 @@ Our environment adds real-world complexity with randomized maps, wind disturbanc
 └── README.md                  # Project documentation
 ```
 
-## 📦  Installation & Running
+## Installation & Running
 ### 1. Clone this repository:
 
 ```bash
@@ -60,29 +60,28 @@ Note: The custom environment logic is defined in `custom_frozenlake.py`, which i
 
 
 
-## 🎮 Features
+## Features
 
-- 🧱 Falafel tile gives **+3** points and disappears when collected
-- 💥 Matkot trap gives **–10** and ends the episode immediately
-- 🏁 Goal tile gives **+10** and ends the episode
-- 🚶 Step penalty of **–1** to encourage efficient navigation
-- 🔁 Repeated visits penalized by **–n**, where *n* is the number of times the tile was visited
-- 🧍 Stuck penalty of **–2** when the agent fails to move
-- 🌬️ 20% wind probability that randomly changes agent’s direction
-- 🔁 Environment resets after each episode or 50 steps
-- 📈 Reward plot generated during training
-
-
+- Falafel tile: **+3** reward, disappears when collected.
+- Matkot trap: **–10** penalty, ends the episode immediately.
+- Goal tile: **+10** reward, ends the episode.
+- Step penalty: **–1** per step to encourage efficient navigation.
+- Repeated visit penalty: **–k** where *k* is the number of times the tile has been visited in the current episode.
+- Stuck penalty: **–2** if the agent attempts an action but does not change position.
+- Wind: 20% probability of wind randomly changing the agent’s intended action.
+- Episode termination: Ends after reaching Goal, Trap, or after a maximum number of steps (default 100 for training, 50 for visualization).
+- Reward plot: Generated during training to show performance over episodes.
 
 
-## 👨‍💻 Authors
 
-- Aron Bensimhon  
-- Oriana Felszer  
+
+## Authors
+
+- Aron Bensimhon
+- Oriana Felszer
 - Eden Shmuel
 
-  
-Industrial Engineering and Management, Ariel University
+Affiliation: Industrial Engineering and Management, Ariel University.
 
 
 
